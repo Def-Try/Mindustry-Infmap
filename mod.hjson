@@ -1,0 +1,26 @@
+#the mod name as displayed in-game
+displayName: "Inf Map Base"
+
+#the internal name of your mod
+name: "infmap"
+
+#your name
+author: "Benry#5935"
+
+#the fully qualified main class of the mod
+main: "infmap.Main"
+
+#the mod description as seen in the mod dialog
+description: "An Infinity Map Base"
+
+#the mod version
+version: 0.1
+
+#the minimum game build required to run this mod
+minGameVersion: 140
+
+#this is a java mod
+java: true
+
+#hidden
+hidden: true
