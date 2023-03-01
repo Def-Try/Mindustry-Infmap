@@ -50,6 +50,9 @@ import mindustry.logic.*;
 import mindustry.maps.Map;
 import mindustry.net.Administration.*;
 
+import infmap.Terrain;
+
+
 import static mindustry.Vars.*;
 
 public class Chunks{
@@ -126,8 +129,8 @@ public class Chunks{
             this.x = tile.x;
             this.y = tile.y;
             this.block = tile.block();
-            this.floor = tile.floor();
-            this.overlay = tile.overlay();
+            this.floor = chunk.getBlock(tile.x, tile.y).toTile().floor();
+            this.overlay = chunk.getBlock(tile.x, tile.y).toTile().overlay();
             if (tile.build != null) {
                 this.build = tile.build;
                 this.rotation = tile.build.rotation();
@@ -140,19 +143,19 @@ public class Chunks{
                 Seq<Tile> linked = new Seq<>();
                 linked = tile.getLinkedTiles(linked);
                 linked.forEach(t -> {
-                    if (t != tile) chunk.putBlock(t.x, t.y, new ChunkBlock(t, this.build));
+                    if (t != tile) chunk.putBlock(t.x, t.y, new ChunkBlock(t, this.build, chunk));
                 });
                 linked.forEach(t -> {
                     log(t);
                 });
             }
         }
-        public ChunkBlock(Tile tile, Building build) {
+        public ChunkBlock(Tile tile, Building build, WorldChunk chunk) {
             this.x = tile.x;
             this.y = tile.y;
             this.block = build.tile.block();
-            this.floor = tile.floor();
-            this.overlay = build.tile.overlay();
+            this.floor = chunk.getBlock(tile.x, tile.y).toTile().floor();
+            this.overlay = chunk.getBlock(tile.x, tile.y).toTile().overlay();
             this.build = build;
             this.rotation = build.rotation();
             this.team = build.tile.team();
@@ -200,6 +203,13 @@ public class Chunks{
         }
     }
 
+    public static int globalizeX(WorldChunkPosition chunkpos, int x){
+        return chunkpos.x * Vars.world.width() + x;
+    }
+    public static int globalizeY(WorldChunkPosition chunkpos, int y){
+        return chunkpos.y * Vars.world.height() + y;
+    }
+
     public static class WorldChunk {
         private ChunkBlock[][] blocks;
 
@@ -207,11 +217,11 @@ public class Chunks{
             this.blocks = blocks;
         }
 
-        public WorldChunk() {
+        public WorldChunk(WorldChunkPosition chunkpos) {
             this.blocks = new ChunkBlock[Vars.world.width()][Vars.world.height()];
             for (int x = 0; x < Vars.world.width(); x++) {
                 for (int y = 0; y < Vars.world.height(); y++) {
-                    Tile tile = new Tile(x, y, Vars.world.tile(x, y).floor(), Blocks.air, Blocks.air);
+                    Tile tile = new Tile(x, y, Terrain.generateFloor(globalizeX(chunkpos, x), globalizeY(chunkpos, y)), Blocks.air, Blocks.air);
                     this.blocks[x][y] = new ChunkBlock(tile);
                 }
             }
@@ -259,7 +269,7 @@ public class Chunks{
     
     public static void updateChunk(WorldChunkPosition chunkpos, int x, int y, Tile tile) {
         log("tile "+tile);
-        chunks.putIfAbsent(chunkpos, new WorldChunk());
+        chunks.putIfAbsent(chunkpos, new WorldChunk(chunkpos));
         // get the chunk for the current player position
         WorldChunk chunk = chunks.get(chunkpos);
 
@@ -284,7 +294,7 @@ public class Chunks{
     public static void sendWorldData(Player player, WorldChunkPosition chunkpos){
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         DeflaterOutputStream def = new FastDeflaterOutputStream(stream);
-        chunks.putIfAbsent(chunkpos, new WorldChunk());
+        chunks.putIfAbsent(chunkpos, new WorldChunk(chunkpos));
         writeWorld(player, chunks.get(chunkpos), def);
         WorldStream data = new WorldStream();
         data.stream = new ByteArrayInputStream(stream.toByteArray());
