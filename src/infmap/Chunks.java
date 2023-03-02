@@ -50,10 +50,75 @@ import mindustry.logic.*;
 import mindustry.maps.Map;
 import mindustry.net.Administration.*;
 
+import arc.*;
+import arc.func.*;
+import arc.math.*;
+import arc.math.geom.*;
+import arc.math.geom.QuadTree.*;
+import arc.scene.ui.*;
+import arc.scene.ui.layout.*;
+import arc.struct.*;
+import arc.util.*;
+import mindustry.content.*;
+import mindustry.game.*;
+import mindustry.game.EventType.*;
+import mindustry.gen.*;
+import mindustry.type.*;
+import mindustry.ui.*;
+import mindustry.world.blocks.environment.*;
+import arc.func.*;
+import mindustry.game.*;
+import mindustry.gen.*;
+import mindustry.world.modules.*;
+
 import infmap.Terrain;
 
 
 import static mindustry.Vars.*;
+
+class CachedTile extends Tile{
+
+    public @Nullable Building build;
+    public short x, y;
+    protected Block block;
+    protected Floor floor;
+    protected Floor overlay;
+    protected boolean changing = false;
+
+    public CachedTile(int x, int y){
+        super(x, y);
+    }
+
+    public CachedTile(int x, int y, Block floor, Block overlay, Block wall){
+        super(x, y, floor, overlay, wall);
+    };
+
+    public CachedTile(){
+        super(0, 0);
+    }
+
+    @Override
+    protected void preChanged(){
+        //this basically overrides the old tile code and doesn't remove from proximity
+    }
+
+    @Override
+    protected void changeBuild(Team team, Prov<Building> entityprov, int rotation){
+        build = null;
+
+        Block block = block();
+
+        if(block.hasBuilding()){
+            Building n = entityprov.get();
+            n.tile(this);
+            n.block = block;
+            if(block.hasItems) n.items = new ItemModule();
+            if(block.hasLiquids) n.liquids(new LiquidModule());
+            if(block.hasPower) n.power(new PowerModule());
+            build = n;
+        }
+    }
+}
 
 public class Chunks{
     
@@ -221,7 +286,7 @@ public class Chunks{
             this.blocks = new ChunkBlock[Vars.world.width()][Vars.world.height()];
             for (int x = 0; x < Vars.world.width(); x++) {
                 for (int y = 0; y < Vars.world.height(); y++) {
-                    Tile tile = new Tile(x, y, Terrain.generateFloor(globalizeX(chunkpos, x), globalizeY(chunkpos, y)), Blocks.air, Blocks.air);
+                    CachedTile tile = new CachedTile(x, y, Terrain.generateFloor(globalizeX(chunkpos, x), globalizeY(chunkpos, y)), Blocks.air, Blocks.air);
                     this.blocks[x][y] = new ChunkBlock(tile);
                 }
             }

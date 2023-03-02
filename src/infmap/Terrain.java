@@ -20,12 +20,10 @@ public class Terrain {
         }
         double noiseValue = getNoise(x, y);
         
-        if (noiseValue < 0.2) {
-            return Blocks.sand;
-        } else if (noiseValue < 0.4) {
-            return Blocks.dirt;
-        } else if (noiseValue < 0.6) {
+        if (noiseValue < 0.3) {
             return Blocks.grass;
+        } else if (noiseValue < 0.7) {
+            return Blocks.dirt;
         } else {
             return Blocks.stone;
         }
